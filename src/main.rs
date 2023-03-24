@@ -1,20 +1,35 @@
-use crossterm::event::{Event, KeyCOde, KeyEvent};
-use crossterm::{event, terminal};
+use crossterm::event::*
+use crossterm::terminal::ClearType;
+use crossterm::{cursor, event, execute, terminal};
+use std::io::stdout;
 use std::time::Duration;
-
-use std::io;
-use std::io::Read;
 
 struct CleanUp;
 struct Reader;
+struct Output;
 struct Editor {
     reader: Reader,
+    output: Output,
 }
 
 
 impl Drop for CleanUp {
     fn drop(&mut self) {
         terminal::disable_raw_mode().exptect("Could not disable raw mode")
+    }
+}
+
+impl Output {
+    fn new() -> Self {
+        Self 
+    }
+
+    fn clear_screen() -> crossterm::Result<()> {
+        execute!(stdout(), terminal::Clear(ClearType::All))
+    }
+
+    fn refresh_screen(&self) -> crossterm::Result<()> {
+        Self::clean_screen()
     }
 }
 
@@ -33,7 +48,10 @@ impl Reader {
 
 impl Editor {
     fn new() -> Self {
-        Self { reader: Reader }
+        Self { 
+            reader: Reader,
+            output: Outpit::new(),
+        }
     }
 
     fn process_keypress(&self) -> crossterm:Result<bool> {
@@ -48,32 +66,40 @@ impl Editor {
     }
 
     fn run(&self) -> crossterm::Result<bool> {
+        self.output.refresh_screen()?;
         self.process_keypress()
     }
 }
 
 
-fn main() {
+fn main() -> crossterm::Result<()> {
     let _cleanu_up = CleanuUp;
     terminal::enable_raw_mode()?;
-    loop {
-            if event::poll(Duration::from_millis(1000))? {
-            if let Event::Key(event) = event::read()? {
-                match event {
-                    KeyEvent {
-                        code: KeyCode::Char('q),
-                        modifiers: event::KeyModifiers::CONTROL,
-                    } => break,
-                    _ => {
-                        //todo
-                    }
-                }
-                println!("{:?}\r", event);
-            };
-        } else {
-            println!("No inpuet yet\r");
-            }
-    }
+
+    let editor = Editor::new();
+
+    while editor.run()? {}
+
     Ok(())
+
+    //loop {
+    //        if event::poll(Duration::from_millis(1000))? {
+    //        if let Event::Key(event) = event::read()? {
+    //            match event {
+    //                KeyEvent {
+    //                    code: KeyCode::Char('q),
+    //                    modifiers: event::KeyModifiers::CONTROL,
+    //                } => break,
+    //                _ => {
+    //                    //todo
+    //                }
+    //            }
+    //            println!("{:?}\r", event);
+    //        };
+    //    } else {
+    //        println!("No inpuet yet\r");
+    //        }
+    //}
+    //Ok(())
 }
 
