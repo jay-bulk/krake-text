@@ -1,4 +1,4 @@
-use crossterm::event::*
+use crossterm::event::*;
 use crossterm::terminal::ClearType;
 use crossterm::{cursor, event, execute, terminal};
 use std::io::stdout;
@@ -6,7 +6,9 @@ use std::time::Duration;
 
 struct CleanUp;
 struct Reader;
-struct Output;
+struct Output {
+    win_size: (usize, usize),
+}
 struct Editor {
     reader: Reader,
     output: Output,
@@ -15,21 +17,39 @@ struct Editor {
 
 impl Drop for CleanUp {
     fn drop(&mut self) {
-        terminal::disable_raw_mode().exptect("Could not disable raw mode")
+        terminal::disable_raw_mode().expect("Could not disable raw mode");
+        Output::clear_screen().expect("Error");
     }
 }
 
 impl Output {
     fn new() -> Self {
-        Self 
+
+        let win_size = terminal::size()
+            .map(|(x, y)| (x as usize, y as usize))
+            .unwrap();
+        Self { win_size }
     }
 
     fn clear_screen() -> crossterm::Result<()> {
-        execute!(stdout(), terminal::Clear(ClearType::All))
+        execute!(stdout(), terminal::Clear(ClearType::All))?;
+        execute!(stdout(), cursor::MoveTo(0,0))
+    }
+
+    fn draw_rows(&self) {
+        let screen_rows = self.win_size.1;
+        for _ in 0..screen_rows {
+            print!("~");
+            if i < screen_rows - 1 {
+                println!("\r")
+        }
+        stdout().flush();
     }
 
     fn refresh_screen(&self) -> crossterm::Result<()> {
-        Self::clean_screen()
+        Self::clear_screen()?;
+        self.draw_rows();
+        execute!(stdout(), cursor::MoveTo(0,0))
     }
 }
 
@@ -50,11 +70,11 @@ impl Editor {
     fn new() -> Self {
         Self { 
             reader: Reader,
-            output: Outpit::new(),
+            output: Output::new(),
         }
     }
 
-    fn process_keypress(&self) -> crossterm:Result<bool> {
+    fn process_keypress(&self) -> crossterm::Result<bool> {
         match self.reader.read_key()? {
             KeyEvent {
                 code: KeyCode::Char('q'),
@@ -73,7 +93,7 @@ impl Editor {
 
 
 fn main() -> crossterm::Result<()> {
-    let _cleanu_up = CleanuUp;
+    let _clean_up = CleanUp;
     terminal::enable_raw_mode()?;
 
     let editor = Editor::new();
