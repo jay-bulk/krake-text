@@ -14,6 +14,44 @@ struct Editor {
     output: Output,
 }
 
+struct EditorContents {
+    content: String,
+}
+
+impl EditorContents {
+    fn new() -> Self {
+        Self {
+            content: String::new(),
+        }
+    }
+
+    fn push(&mut self, ch: char) {
+        self.content.push(ch)
+    }
+
+    fn push_str(&mut self, string: &str) {
+        self.content.push_str(string)
+    }
+}
+
+impl io::Write for EditorContents {
+    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
+        match std::str::from_utf8(buf) {
+            Ok(s) => {
+                self.content.push_str(s);
+                Ok(s.len())
+            }
+            Err(_) => Err(io::ErrorKind::WriteZero.into()),
+        }
+    }
+    
+    fn flush(&mut self) -> io::Result<()> {
+        let out = write!(stdout(), "{}", self.content);
+        stdout().flush()?;
+        self.content.clear();
+        out
+    }
+}
 
 impl Drop for CleanUp {
     fn drop(&mut self) {
@@ -38,10 +76,11 @@ impl Output {
 
     fn draw_rows(&self) {
         let screen_rows = self.win_size.1;
-        for _ in 0..screen_rows {
+        for i in 0..screen_rows {
             print!("~");
             if i < screen_rows - 1 {
                 println!("\r")
+            }
         }
         stdout().flush();
     }
